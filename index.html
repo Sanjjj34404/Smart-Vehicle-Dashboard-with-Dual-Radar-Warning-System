@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Car Dashboard</title>
+  <style>
+    body {
+      background: #111;
+      color: white;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto; /* Enable vertical scrolling */
+    }
+    .wrapper {
+      min-height: 200vh; /* Ensure enough vertical space to scroll */
+    }
+    .dashboard {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      align-items: center;
+      height: 60vh;
+      padding: 20px;
+    }
+    .section {
+      width: 30%;
+      padding: 20px;
+      background: #222;
+      border-radius: 15px;
+      box-shadow: 0px 4px 10px rgba(0, 255, 255, 0.3);
+      position: relative;
+    }
+    .icon {
+      width: 50px;
+      height: 50px;
+    }
+    #speed {
+      font-size: 3em;
+      font-weight: bold;
+      color: cyan;
+    }
+    #alerts {
+      color: red;
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+    .radar-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 40px;
+    }
+    canvas {
+      background-color: black;
+      border: 2px solid #0f0;
+      margin: 10px;
+    }
+    .road {
+      width: 50px;
+      height: 400px;
+      background: #333;
+      border-left: 5px dashed yellow;
+      border-right: 5px dashed yellow;
+    }
+    .warning {
+      color: red;
+      font-size: 24px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="dashboard">
+      <div class="section">
+        <h2><img src="clock-icon.png" class="icon"> Time & Weather</h2>
+        <p id="time">--:--</p>
+        <p id="weather">Loading...</p>
+      </div>
+      <div class="section">
+        <h2><img src="speedometer-icon.png" class="icon"> Speedometer</h2>
+        <p id="speed">0 km/h</p>
+      </div>
+      <div class="section">
+        <h2><img src="network-icon.png" class="icon"> IoV Network</h2>
+        <p>Travel Time: <span id="travelTime">15 min</span></p>
+        <p>Distance: <span id="distance">5 km</span></p>
+        <p id="alerts">No Alerts</p>
+      </div>
+    </div>
+
+    <div class="radar-container">
+      <canvas id="leftRadar" width="300" height="400"></canvas>
+      <div class="road"></div>
+      <canvas id="rightRadar" width="300" height="400"></canvas>
+    </div>
+    <p>Left: <span id="leftAngle">--</span>°, <span id="leftDistance">--</span> cm</p>
+    <p>Right: <span id="rightAngle">--</span>°, <span id="rightDistance">--</span> cm</p>
+    <div id="warning" class="warning"></div>
+  </div>
+
+  <script>
+    function updateTime() {
+      let now = new Date();
+      document.getElementById("time").innerText = now.toLocaleTimeString();
+    }
+    setInterval(updateTime, 1000);
+
+    let currentSpeed = 60;
+    function updateSpeed() {
+      document.getElementById("speed").innerText = currentSpeed + " km/h";
+    }
+    setInterval(updateSpeed, 3000);
+
+    function fetchWeather() {
+      document.getElementById("weather").innerText = "Clear, 28°C";
+    }
+    setTimeout(fetchWeather, 1000);
+
+    const lCanvas = document.getElementById('leftRadar');
+    const rCanvas = document.getElementById('rightRadar');
+    const lCtx = lCanvas.getContext('2d');
+    const rCtx = rCanvas.getContext('2d');
+    const centerX = 150;
+    const centerY = 400;
+    const maxRadius = 180;
+
+    function drawRadar(ctx, angle, distance, side) {
+      ctx.clearRect(0, 0, 300, 400);
+      ctx.strokeStyle = '#0f0';
+      ctx.lineWidth = 1;
+      for (let r = 50; r <= maxRadius; r += 50) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, r, -Math.PI, 0);
+        ctx.stroke();
+      }
+      const rad = (side === 'left' ? (180 - angle) : angle) * Math.PI / 180;
+      const sweepX = centerX + maxRadius * Math.cos(rad);
+      const sweepY = centerY - maxRadius * Math.sin(rad);
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(sweepX, sweepY);
+      ctx.strokeStyle = '#0f0';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      if (distance > 0 && distance <= 100) {
+        const scaled = (distance / 100) * maxRadius;
+        const objX = centerX + scaled * Math.cos(rad);
+        const objY = centerY - scaled * Math.sin(rad);
+        ctx.beginPath();
+        ctx.arc(objX, objY, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'red';
+        ctx.fill();
+      }
+    }
+
+    async function fetchData() {
+      try {
+        const res = await fetch('/distance');
+        const data = await res.json();
+
+        const l = data.left;
+        const r = data.right;
+
+        document.getElementById('leftAngle').textContent = l.angle;
+        document.getElementById('leftDistance').textContent = l.distance;
+        document.getElementById('rightAngle').textContent = r.angle;
+        document.getElementById('rightDistance').textContent = r.distance;
+
+        drawRadar(lCtx, l.angle, l.distance, 'left');
+        drawRadar(rCtx, r.angle, r.distance, 'right');
+
+        let warningMessage = '';
+        if (l.distance > 0 && l.distance <= 50) warningMessage += '⚠️ Object too close on LEFT side! ';
+        if (r.distance > 0 && r.distance <= 50) warningMessage += '⚠️ Object too close on RIGHT side!';
+
+        const warning = document.getElementById('warning');
+        const alerts = document.getElementById('alerts');
+
+        if (warningMessage) {
+          warning.textContent = warningMessage.trim();
+          alerts.textContent = 'Alert: Object too close! Speed reduced to 15 km/h';
+          autoReduceSpeed();
+        } else {
+          warning.textContent = '';
+          alerts.textContent = 'No Alerts';
+          currentSpeed = Math.min(currentSpeed + 5, 60);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function autoReduceSpeed() {
+      currentSpeed = 15;
+      updateSpeed();
+    }
+
+    setInterval(fetchData, 300);
+  </script>
+</body>
+</html>
