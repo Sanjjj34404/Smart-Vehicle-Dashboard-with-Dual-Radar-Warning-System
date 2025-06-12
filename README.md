@@ -40,12 +40,6 @@ Others: REST API, Real-time data rendering
 
 
 
-📷 Project Demo
-
-
-
-
-(Add screenshots or a short demo video link here once available)
 
 
 
