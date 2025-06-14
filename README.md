@@ -14,11 +14,11 @@ vehicles and driver-assistance prototypes.
 
 
 
-- Frontend: HTML5, CSS3, JavaScript (Canvas API)
-- Backend: Node.js (Express)
-- Hardware: Arduino Uno, HC-SR04 Ultrasonic Sensors, USB Serial Communication
-- Protocols: Serial over USB, JSON (data exchange)
-- Others: REST API, Real-time data rendering
+- **Frontend:** HTML5, CSS3, JavaScript (Canvas API)
+- **Backend:** Node.js (Express)
+- **Hardware:** Arduino Uno, HC-SR04 Ultrasonic Sensors, USB Serial Communication
+- **Protocols:** Serial over USB, JSON (data exchange)
+- **Others:** REST API, Real-time data rendering
 
 
 
