@@ -69,3 +69,6 @@ Listens to serial port, parses sensor data, and exposes it through a /distance A
 
 Polls the /distance API at 300ms intervals, draws radar arcs using the Canvas API, and dynamically updates alerts and speed displays.
 
+
+![ui3](https://github.com/user-attachments/assets/291f4819-e84f-4c10-a151-b4bbfd07d9c5)
+
